@@ -1,41 +1,23 @@
-from PIL import Image
-import os
+import pandas as pd
+import re
 
-# Set the path to the image
-input_path = r'C:\Projects\eDataPlayground\eDataPlayground\DSC_7238.jpg'  # Ensure this path is correct
+# Load the CSV file with a different encoding (ISO-8859-1)
+df = pd.read_csv('data.csv', header=None, names=[
+                 "ID", "Date", "Email", "Message"], encoding='ISO-8859-1')
 
-# Print the path to verify
-print(f'Checking file at: {input_path}')
+# Function to extract 17-character alphanumeric VINs
 
-# Check if the file exists
-if not os.path.exists(input_path):
-    print(f'File not found: {input_path}')
-else:
-    # Set the output path to save the resized image in the same directory with a new name
-    output_path = r'C:\Projects\eDataPlayground\eDataPlayground\DSC_2024_resized.jpg'
 
-    try:
-        # Open the image
-        img = Image.open(input_path)
+def extract_vin(message):
+    # VIN regex: 17 alphanumeric characters (excluding I, O, Q)
+    match = re.findall(r'\b[A-HJ-NPR-Z0-9]{17}\b', message)
+    return match[0] if match else None
 
-        # Resize and crop to a 600x600 square
-        width, height = img.size
-        min_dim = min(width, height)
 
-        # Calculate cropping box to get a centered square
-        left = (width - min_dim) / 2
-        top = (height - min_dim) / 2
-        right = (width + min_dim) / 2
-        bottom = (height + min_dim) / 2
-        img_cropped = img.crop((left, top, right, bottom))
+# Apply the VIN extraction function to the last column (Message) and create a new column 'VIN'
+df['VIN'] = df['Message'].apply(extract_vin)
 
-        # Resize to 600x600 pixels
-        img_resized = img_cropped.resize((600, 600), Image.BICUBIC)
+# Save the updated CSV to a new file
+df.to_csv('updated_data.csv', index=False)
 
-        # Save the resized image as a JPEG in the specified directory
-        img_resized.save(output_path, format="JPEG", quality=85, optimize=True)
-
-        print(f'Resized image saved to: {output_path}')
-
-    except Exception as e:
-        print(f'An error occurred: {e}')
+print("VIN column added successfully and saved to 'updated_data.csv'")
